@@ -1,4 +1,5 @@
 mod info;
+mod shaders;
 
 use std::sync::Arc;
 
@@ -35,48 +36,14 @@ use vulkano::pipeline::viewport::Viewport;
 use vulkano::swapchain;
 use vulkano::swapchain::{PresentMode, SurfaceTransform, Swapchain};
 
+use self::shaders::Vertex;
+
 /*
 use ::image;
 #[allow(unused_imports)]
 use image::{ImageBuffer, Rgba};
 */
 
-#[derive(Copy, Clone)]
-struct Vertex {
-    position: [f32; 2],
-}
-impl_vertex!(Vertex, position);
-
-#[allow(dead_code)]
-mod default_vertex_shader {
-    #[derive(VulkanoShader)]
-    #[ty = "vertex"]
-    #[src = "
-    #version 450
-    layout(location = 0) in vec2 position;
-
-    void main() {
-        gl_Position = vec4(position, 0.0, 1.0);
-    }
-    "]
-    #[allow(dead_code)]
-    struct Dummy;
-}
-#[allow(dead_code)]
-mod default_fragment_shader {
-    #[derive(VulkanoShader)]
-    #[ty = "fragment"]
-    #[src = "
-    #version 450
-    layout(location = 0) out vec4 f_color;
-
-    void main() {
-        f_color = vec4(1.0, 0.0, 0.0, 1.0);
-    }
-    "]
-    #[allow(dead_code)]
-    struct Dummy;
-}
 
 pub fn run() {
     let instance = {
@@ -175,9 +142,9 @@ pub fn run() {
         position: [0.5, -0.25],
     };
 
-    let vertex_shader = default_vertex_shader::Shader::load(device.clone())
+    let vertex_shader = shaders::default_vertex_shader::Shader::load(device.clone())
         .expect("Failed to create vertex shader module");
-    let fragment_shader = default_fragment_shader::Shader::load(device.clone())
+    let fragment_shader = shaders::default_fragment_shader::Shader::load(device.clone())
         .expect("Failed to create fragment shader module");
 
     let render_pass = Arc::new(
