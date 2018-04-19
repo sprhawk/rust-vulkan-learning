@@ -124,6 +124,9 @@ fn main() {
         .build_vk_surface(&events_loop, instance.clone())
         .unwrap();
 
+    // if do not call is_supported, validation layer will report warnings
+    let _r = window.is_supported(queue_family).unwrap();
+
     let _win = window.window();
     let caps = window
         .capabilities(physical_device)
