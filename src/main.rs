@@ -19,6 +19,7 @@ use vulkano::instance::{DeviceExtensions, Features, Instance, InstanceExtensions
 
 use vulkano::device::Device;
 
+#[allow(unused_imports)]
 use vulkano::format::{ClearValue, Format};
 
 use vulkano::image::{Dimensions, StorageImage};
@@ -30,11 +31,15 @@ use vulkano::framebuffer::{Framebuffer, Subpass};
 
 use vulkano::instance::debug::DebugCallback;
 
-use vulkano::sync::GpuFuture;
+use vulkano::sync::{now, GpuFuture};
 
 use vulkano::pipeline::GraphicsPipeline;
 use vulkano::pipeline::viewport::Viewport;
 
+use vulkano::swapchain;
+use vulkano::swapchain::{PresentMode, SurfaceTransform, Swapchain};
+
+#[allow(unused_imports)]
 use image::{ImageBuffer, Rgba};
 
 #[derive(Copy, Clone)]
@@ -99,16 +104,52 @@ fn main() {
         .expect("No graphical queue family");
 
     let (device, mut queues) = {
+        let ext = DeviceExtensions {
+            khr_swapchain: true,
+            .. DeviceExtensions::none()
+        };
+
         Device::new(
             physical_device,
             &Features::none(),
-            &DeviceExtensions::none(),
+            &ext,
             [(queue_family, 0.5)].iter().cloned(),
         ).expect("failed to create device")
     };
 
     let queue = queues.next().expect("No queues are found");
 
+    let mut events_loop = winit::EventsLoop::new();
+    let window = winit::WindowBuilder::new()
+        .build_vk_surface(&events_loop, instance.clone())
+        .unwrap();
+
+    let _win = window.window();
+    let caps = window
+        .capabilities(physical_device)
+        .expect("failed to get surface capabalities");
+
+    let dim = caps.current_extent.unwrap_or([1280, 1024]);
+    let alpha = caps.supported_composite_alpha.iter().next().unwrap();
+    let format = caps.supported_formats[0].0;
+
+    let (swap_chain, images) = Swapchain::new(
+        device.clone(),
+        window.clone(),
+        caps.min_image_count,
+        format,
+        dim,
+        1,
+        caps.supported_usage_flags,
+        &queue,
+        SurfaceTransform::Identity,
+        alpha,
+        PresentMode::Fifo,
+        true,
+        None,
+    ).expect("Failed to create swapchain");
+
+    /*
     let image = StorageImage::new(
         device.clone(),
         Dimensions::Dim2d {
@@ -118,6 +159,10 @@ fn main() {
         Format::R8G8B8A8Unorm,
         Some(queue_family),
     ).unwrap();
+    */
+    let (image_index, swapchain_acquire_future) =
+        swapchain::acquire_next_image(swap_chain.clone(), None).unwrap();
+    let image = images[image_index].clone();
 
     let vertex1 = Vertex {
         position: [-0.5, -0.5],
@@ -207,7 +252,8 @@ fn main() {
                 vertex_buffer.clone(),
                 (),
                 (),
-            ).unwrap()
+            )
+            .unwrap()
             .end_render_pass()
             .unwrap()
             .copy_image_to_buffer(image.clone(), buffer.clone())
@@ -215,30 +261,40 @@ fn main() {
             .build()
             .unwrap();
 
+    /*
     let finished = command_buffer.execute(queue.clone()).unwrap();
     finished
         .then_signal_fence_and_flush()
         .unwrap()
         .wait(None)
         .unwrap();
+*/
+    let mut previous_frame_end = Box::new(now(device.clone())) as Box<GpuFuture>;
 
+    previous_frame_end.cleanup_finished();
+    /*
     let buffer_content = buffer.read().unwrap();
     let image = ImageBuffer::<Rgba<u8>, _>::from_raw(1024, 1024, &buffer_content[..]).unwrap();
     image.save("image.png").unwrap();
-
-    /*
-    let mut events_loop = winit::EventsLoop::new();
-    let _window = winit::WindowBuilder::new().build_vk_surface(&events_loop, instance.clone()).unwrap();
-
-    events_loop.run_forever(|event| {
-        match event {
-            winit::Event::WindowEvent { event: winit::WindowEvent::Closed, ..} => {
-                winit::ControlFlow::Break
-            },
-            _ => winit::ControlFlow::Continue,
-        }
-    });
     */
+
+    let future = previous_frame_end
+        .join(swapchain_acquire_future)
+        .then_execute(queue.clone(), command_buffer)
+        .unwrap()
+        .then_swapchain_present(queue.clone(), swap_chain.clone(), image_index)
+        .then_signal_fence_and_flush();
+
+    let future = future.unwrap();
+    // swapchain::present(swap_chain, finished, queue.clone(), image_index);
+
+    events_loop.run_forever(|event| match event {
+        winit::Event::WindowEvent {
+            event: winit::WindowEvent::Closed,
+            ..
+        } => winit::ControlFlow::Break,
+        _ => winit::ControlFlow::Continue,
+    });
 }
 
 #[allow(dead_code)]
