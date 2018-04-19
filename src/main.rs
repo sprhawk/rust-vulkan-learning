@@ -3,6 +3,7 @@ extern crate vulkano;
 
 extern crate vulkano_win;
 extern crate winit;
+extern crate image;
 
 use std::sync::Arc;
 
@@ -10,15 +11,27 @@ use std::sync::Arc;
 use vulkano_win::VkSurfaceBuild;
 
 #[allow(unused_imports)]
-use vulkano::instance::{DeviceExtensions, Instance, InstanceExtensions, Limits, PhysicalDevice,
-                        QueueFamily};
+use vulkano::instance::{DeviceExtensions, Features, Instance, InstanceExtensions, Limits,
+                        PhysicalDevice, QueueFamily};
+
+use vulkano::device::Device;
+
+use vulkano::format::{ClearValue, Format};
+
+use vulkano::image::{Dimensions, StorageImage};
+
+use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBuffer};
+
+use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
 
 use vulkano::instance::debug::DebugCallback;
 
+use vulkano::sync::GpuFuture;
+
+use image::{ImageBuffer, Rgba};
+
 fn main() {
     println!("Hello, Vulkan!");
-
-    
 
     let instance = {
         let app_info = app_info_from_cargo_toml!();
@@ -33,9 +46,60 @@ fn main() {
 
     // print_vk_info(&instance);
 
-    let _phyiscal = PhysicalDevice::enumerate(&instance)
+    let physical_device = PhysicalDevice::enumerate(&instance)
         .next()
         .expect("No device available");
+
+    let queue_family = physical_device
+        .queue_families()
+        .find(|&q| q.supports_graphics())
+        .expect("No graphical queue family");
+
+    let (device, mut queues) = {
+        Device::new(
+            physical_device,
+            &Features::none(),
+            &DeviceExtensions::none(),
+            [(queue_family, 0.5)].iter().cloned(),
+        ).expect("failed to create device")
+    };
+
+    let queue = queues.next().expect("No queues are found");
+
+    let image = StorageImage::new(
+        device.clone(),
+        Dimensions::Dim2d {
+            width: 1024,
+            height: 1024,
+        },
+        Format::R8G8B8A8Unorm,
+        Some(queue_family),
+    ).unwrap();
+
+    let buffer = CpuAccessibleBuffer::from_iter(
+        device.clone(),
+        BufferUsage::all(),
+        (0..1024 * 1024 * 4).map(|_| 0u8),
+    ).expect("Failed to create buffer");
+
+    let command_buffer = AutoCommandBufferBuilder::new(device.clone(), queue.family())
+        .unwrap()
+        .clear_color_image(image.clone(), ClearValue::Float([0.0, 0.0, 1.0, 1.0]))
+        .unwrap()
+        .copy_image_to_buffer(image.clone(), buffer.clone()).unwrap()
+        .build()
+        .unwrap();
+
+    let finished = command_buffer.execute(queue.clone()).unwrap();
+    finished
+        .then_signal_fence_and_flush()
+        .unwrap()
+        .wait(None)
+        .unwrap();
+
+    let buffer_content = buffer.read().unwrap();
+    let image = ImageBuffer::<Rgba<u8>, _>::from_raw(1024, 1024, &buffer_content[..]).unwrap();
+    image.save("image.png").unwrap();
 
     /*
     let mut events_loop = winit::EventsLoop::new();

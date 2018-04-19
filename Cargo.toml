@@ -7,3 +7,4 @@ authors = ["Yang Hongbo <465558+sprhawk@users.noreply.github.com>"]
 vulkano = "*"
 vulkano-win = "*"
 winit = "0.11.0"
+image = "*"
