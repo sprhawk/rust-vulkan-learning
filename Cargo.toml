@@ -5,6 +5,7 @@ authors = ["Yang Hongbo <465558+sprhawk@users.noreply.github.com>"]
 
 [dependencies]
 vulkano = "*"
+vulkano-shader-derive = "*"
 vulkano-win = "*"
 winit = "0.11.0"
 image = "*"
