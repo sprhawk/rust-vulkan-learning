@@ -3,10 +3,6 @@ mod shaders;
 
 use std::sync::Arc;
 
-use ::vulkano;
-use ::vulkano_win;
-use ::winit;
-
 #[allow(unused_imports)]
 use vulkano_win::VkSurfaceBuild;
 
@@ -35,6 +31,9 @@ use vulkano::pipeline::viewport::Viewport;
 
 use vulkano::swapchain;
 use vulkano::swapchain::{PresentMode, SurfaceTransform, Swapchain};
+
+use vulkano_win;
+use winit;
 
 use self::shaders::Vertex;
 
