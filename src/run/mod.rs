@@ -15,9 +15,9 @@ use vulkano::device::Device;
 #[allow(unused_imports)]
 use vulkano::format::{ClearValue, Format};
 
-use vulkano::image::{Dimensions, StorageImage};
+// use vulkano::image::{Dimensions, StorageImage};
 
-use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBuffer, DynamicState};
+use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 
 use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
 use vulkano::framebuffer::{Framebuffer, Subpass};
@@ -252,7 +252,7 @@ pub fn run() {
         .then_swapchain_present(queue.clone(), swap_chain.clone(), image_index)
         .then_signal_fence_and_flush();
 
-    let future = future.unwrap();
+    let _future = future.unwrap();
     // swapchain::present(swap_chain, finished, queue.clone(), image_index);
 
     events_loop.run_forever(|event| match event {
