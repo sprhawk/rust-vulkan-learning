@@ -10,7 +10,7 @@ use vulkano_win::VkSurfaceBuild;
 use vulkano::instance::{DeviceExtensions, Features, Instance, InstanceExtensions, Limits,
                         PhysicalDevice, QueueFamily};
 
-use vulkano::device::Device;
+use vulkano::device::{Device, Queue};
 
 #[allow(unused_imports)]
 use vulkano::format::{ClearValue, Format};
@@ -43,6 +43,12 @@ use ::image;
 use image::{ImageBuffer, Rgba};
 */
 
+pub struct VulkanStruct<'a> {
+    pub instance: Arc<Instance>,
+    pub physical_device: PhysicalDevice<'a>,
+    pub device: Arc<Device>,
+    pub queue: Arc<Queue>,
+}
 
 pub fn run() {
     let instance = {
@@ -82,10 +88,22 @@ pub fn run() {
     };
 
     let queue = queues.next().expect("No queues are found");
+    let vertex_shader = shaders::default_vertex_shader::Shader::load(device.clone())
+        .expect("Failed to create vertex shader module");
+    let fragment_shader = shaders::default_fragment_shader::Shader::load(device.clone())
+        .expect("Failed to create fragment shader module");
+
+
+    let vulkan_obj = VulkanStruct {
+        instance: instance.clone(),
+        physical_device: physical_device,
+        device: device,
+        queue: queue,
+    };
 
     let mut events_loop = winit::EventsLoop::new();
     let window = winit::WindowBuilder::new()
-        .build_vk_surface(&events_loop, instance.clone())
+        .build_vk_surface(&events_loop, vulkan_obj.physical_device.instance().clone())
         .unwrap();
 
     // if do not call is_supported, validation layer will report warnings
@@ -101,14 +119,14 @@ pub fn run() {
     let format = caps.supported_formats[0].0;
 
     let (swap_chain, images) = Swapchain::new(
-        device.clone(),
+        vulkan_obj.device.clone(),
         window.clone(),
         caps.min_image_count,
         format,
         dim,
         1,
         caps.supported_usage_flags,
-        &queue,
+        &vulkan_obj.queue,
         SurfaceTransform::Identity,
         alpha,
         PresentMode::Fifo,
@@ -141,13 +159,9 @@ pub fn run() {
         position: [0.5, -0.25],
     };
 
-    let vertex_shader = shaders::default_vertex_shader::Shader::load(device.clone())
-        .expect("Failed to create vertex shader module");
-    let fragment_shader = shaders::default_fragment_shader::Shader::load(device.clone())
-        .expect("Failed to create fragment shader module");
-
+    
     let render_pass = Arc::new(
-        single_pass_renderpass!(device.clone(),
+        single_pass_renderpass!(vulkan_obj.device.clone(),
     attachments: {
         color: {
             load: Clear,
@@ -177,7 +191,7 @@ pub fn run() {
             .viewports_dynamic_scissors_irrelevant(1)
             .fragment_shader(fragment_shader.main_entry_point(), ())
             .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
-            .build(device.clone())
+            .build(vulkan_obj.device.clone())
             .unwrap(),
     );
 
@@ -193,19 +207,19 @@ pub fn run() {
     };
 
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
-        device.clone(),
+        vulkan_obj.device.clone(),
         BufferUsage::all(),
         vec![vertex1, vertex2, vertex3].into_iter(),
     ).unwrap();
 
     let buffer = CpuAccessibleBuffer::from_iter(
-        device.clone(),
+        vulkan_obj.device.clone(),
         BufferUsage::all(),
         (0..1024 * 1024 * 4).map(|_| 0u8),
     ).expect("Failed to create buffer");
 
     let command_buffer =
-        AutoCommandBufferBuilder::primary_one_time_submit(device.clone(), queue.family())
+        AutoCommandBufferBuilder::primary_one_time_submit(vulkan_obj.device.clone(), vulkan_obj.queue.family())
             .unwrap()
             .begin_render_pass(
                 framebuffer.clone(),
@@ -236,7 +250,7 @@ pub fn run() {
         .wait(None)
         .unwrap();
 */
-    let mut previous_frame_end = Box::new(now(device.clone())) as Box<GpuFuture>;
+    let mut previous_frame_end = Box::new(now(vulkan_obj.device.clone())) as Box<GpuFuture>;
 
     previous_frame_end.cleanup_finished();
     /*
@@ -247,9 +261,9 @@ pub fn run() {
 
     let future = previous_frame_end
         .join(swapchain_acquire_future)
-        .then_execute(queue.clone(), command_buffer)
+        .then_execute(vulkan_obj.queue.clone(), command_buffer)
         .unwrap()
-        .then_swapchain_present(queue.clone(), swap_chain.clone(), image_index)
+        .then_swapchain_present(vulkan_obj.queue.clone(), swap_chain.clone(), image_index)
         .then_signal_fence_and_flush();
 
     let _future = future.unwrap();
