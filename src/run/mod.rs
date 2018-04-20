@@ -37,6 +37,9 @@ use winit;
 
 use self::shaders::Vertex;
 
+use self::shaders::default_vertex_shader::Shader as VertexShader;
+use self::shaders::default_fragment_shader::Shader as FragmentShader;
+
 /*
 use ::image;
 #[allow(unused_imports)]
@@ -46,6 +49,8 @@ use image::{ImageBuffer, Rgba};
 pub struct VulkanStruct {
     pub device: Arc<Device>,
     pub queue: Arc<Queue>,
+    pub vertex_shader: VertexShader,
+    pub fragment_shader: FragmentShader,
 }
 
 fn create_vulkan_struct() -> VulkanStruct {
@@ -87,22 +92,22 @@ fn create_vulkan_struct() -> VulkanStruct {
 
     let queue = queues.next().expect("No queues are found");
     
+    let vertex_shader = shaders::default_vertex_shader::Shader::load(device.clone())
+        .expect("Failed to create vertex shader module");
+    let fragment_shader = shaders::default_fragment_shader::Shader::load(device.clone())
+        .expect("Failed to create fragment shader module");
 
     VulkanStruct {
         device: device,
         queue: queue,
+        vertex_shader: vertex_shader,
+        fragment_shader: fragment_shader,
     }
 }
 
 pub fn run() {
     
     let vulkan_obj = create_vulkan_struct();
-
-    let vertex_shader = shaders::default_vertex_shader::Shader::load(vulkan_obj.device.clone())
-        .expect("Failed to create vertex shader module");
-    let fragment_shader = shaders::default_fragment_shader::Shader::load(vulkan_obj.device.clone())
-        .expect("Failed to create fragment shader module");
-
 
     let mut events_loop = winit::EventsLoop::new();
     let window = winit::WindowBuilder::new()
@@ -190,9 +195,9 @@ pub fn run() {
     let pipeline = Arc::new(
         GraphicsPipeline::start()
             .vertex_input_single_buffer::<Vertex>()
-            .vertex_shader(vertex_shader.main_entry_point(), ())
+            .vertex_shader(vulkan_obj.vertex_shader.main_entry_point(), ())
             .viewports_dynamic_scissors_irrelevant(1)
-            .fragment_shader(fragment_shader.main_entry_point(), ())
+            .fragment_shader(vulkan_obj.fragment_shader.main_entry_point(), ())
             .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
             .build(vulkan_obj.device.clone())
             .unwrap(),
