@@ -60,7 +60,7 @@ fn create_vulkan_struct() -> VulkanStruct {
         println!("Vulkan Debug: {:?}", msg.description);
     }).ok();
 
-    info::print_vk_info(&instance);
+    // info::print_vk_info(&instance);
 
     let physical_device = PhysicalDevice::enumerate(&instance)
         .next()
