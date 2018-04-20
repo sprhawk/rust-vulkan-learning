@@ -43,14 +43,12 @@ use ::image;
 use image::{ImageBuffer, Rgba};
 */
 
-pub struct VulkanStruct<'a> {
-    pub instance: Arc<Instance>,
-    pub physical_device: PhysicalDevice<'a>,
+pub struct VulkanStruct {
     pub device: Arc<Device>,
     pub queue: Arc<Queue>,
 }
 
-pub fn run() {
+fn create_vulkan_struct() -> VulkanStruct {
     let instance = {
         let app_info = app_info_from_cargo_toml!();
         // println!("Application Info:{:?}", app_info);
@@ -88,30 +86,35 @@ pub fn run() {
     };
 
     let queue = queues.next().expect("No queues are found");
-    let vertex_shader = shaders::default_vertex_shader::Shader::load(device.clone())
+    
+
+    VulkanStruct {
+        device: device,
+        queue: queue,
+    }
+}
+
+pub fn run() {
+    
+    let vulkan_obj = create_vulkan_struct();
+
+    let vertex_shader = shaders::default_vertex_shader::Shader::load(vulkan_obj.device.clone())
         .expect("Failed to create vertex shader module");
-    let fragment_shader = shaders::default_fragment_shader::Shader::load(device.clone())
+    let fragment_shader = shaders::default_fragment_shader::Shader::load(vulkan_obj.device.clone())
         .expect("Failed to create fragment shader module");
 
 
-    let vulkan_obj = VulkanStruct {
-        instance: instance.clone(),
-        physical_device: physical_device,
-        device: device,
-        queue: queue,
-    };
-
     let mut events_loop = winit::EventsLoop::new();
     let window = winit::WindowBuilder::new()
-        .build_vk_surface(&events_loop, vulkan_obj.physical_device.instance().clone())
+        .build_vk_surface(&events_loop, vulkan_obj.device.physical_device().instance().clone())
         .unwrap();
 
     // if do not call is_supported, validation layer will report warnings
-    let _r = window.is_supported(queue_family).unwrap();
+    let _r = window.is_supported(vulkan_obj.queue.family()).unwrap();
 
     let _win = window.window();
     let caps = window
-        .capabilities(physical_device)
+        .capabilities(vulkan_obj.device.physical_device())
         .expect("failed to get surface capabalities");
 
     let dim = caps.current_extent.unwrap_or([1280, 1024]);
