@@ -19,7 +19,8 @@ use vulkano::format::{ClearValue, Format};
 
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 
-use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
+#[allow(unused_imports)]
+use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, ImmutableBuffer};
 use vulkano::framebuffer::{Framebuffer, Subpass};
 
 use vulkano::instance::debug::DebugCallback;
@@ -214,17 +215,26 @@ pub fn run() {
         ..DynamicState::none()
     };
 
+    let vertices = vec![vertex1, vertex2, vertex3];
+    let (vertex_buffer, vertex_buffer_future) = ImmutableBuffer::from_iter(
+        vertices.into_iter(),
+        BufferUsage::all(),
+        queue
+    );
+    /*
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
         vulkan_obj.device.clone(),
         BufferUsage::all(),
         vec![vertex1, vertex2, vertex3].into_iter(),
     ).unwrap();
-
+    */
+    /*
     let buffer = CpuAccessibleBuffer::from_iter(
         vulkan_obj.device.clone(),
         BufferUsage::all(),
         (0..1024 * 1024 * 4).map(|_| 0u8),
     ).expect("Failed to create buffer");
+    */
 
     let command_buffer =
         AutoCommandBufferBuilder::primary_one_time_submit(vulkan_obj.device.clone(), vulkan_obj.queue.family())
