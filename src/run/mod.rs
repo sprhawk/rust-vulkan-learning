@@ -152,7 +152,9 @@ pub fn run() {
         color: {
             load: Clear,
             store: Store,
-            format: Format::R8G8B8A8Unorm,
+            format: Format::B8G8R8A8Srgb,
+            // R8G8B8A8Unorm is not supported under Linux Intel driver
+            // format: Format::R8G8B8A8Unorm,
             samples: 1,
         }
     },
