@@ -4,6 +4,8 @@ Learning Rust + Vulkano
 Notes On Ubuntu:
 ----
 
+1. Build & Run
+
 To run on [Ubuntu 16.04 LTS](https://01.org/linuxgraphics/blogs/jekstrand/2016/open-source-vulkan-drivers-intel-hardware) with [Intel Driver](https://launchpad.net/~ubuntu-x-swat/+archive/ubuntu/intel-graphics-updates):
 
 ```
@@ -28,3 +30,7 @@ cargo run
 ```
 
 should work
+
+2. Format
+
+surface format R8G8R8A8_SRGB is supported to run
