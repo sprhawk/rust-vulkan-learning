@@ -175,9 +175,9 @@ pub fn run() {
         color: {
             load: Clear,
             store: Store,
-            format: Format::B8G8R8A8Srgb,
+            // format: Format::B8G8R8A8Srgb,
             // R8G8B8A8Unorm is not supported under Linux Intel driver
-            // format: Format::R8G8B8A8Unorm,
+            format: Format::R8G8B8A8Unorm,
             samples: 1,
         }
     },
@@ -221,8 +221,11 @@ pub fn run() {
     let (vertex_buffer, vertex_buffer_future) = ImmutableBuffer::from_iter(
         vertices.into_iter(),
         BufferUsage::all(),
-        queue
-    );
+        vulkan_obj.queue.clone()
+    ).unwrap();
+
+    vertex_buffer_future.flush().unwrap();
+    vertex_buffer_future.then_signal_fence_and_flush();
     /*
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
         vulkan_obj.device.clone(),
@@ -257,8 +260,8 @@ pub fn run() {
             .unwrap()
             .end_render_pass()
             .unwrap()
-            .copy_image_to_buffer(image.clone(), buffer.clone())
-            .unwrap()
+            // .copy_image_to_buffer(image.clone(), buffer.clone())
+            // .unwrap()
             .build()
             .unwrap();
 
