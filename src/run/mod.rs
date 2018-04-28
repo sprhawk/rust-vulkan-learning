@@ -1,5 +1,7 @@
 mod info;
 mod shaders;
+#[cfg(feature = "win")]
+mod win;
 
 use std::sync::Arc;
 
@@ -28,27 +30,18 @@ use vulkano::pipeline::GraphicsPipeline;
 use vulkano::pipeline::viewport::Viewport;
 
 use vulkano::swapchain;
-use vulkano::swapchain::{PresentMode, SurfaceTransform, Swapchain, SwapchainCreationError};
 
-use vulkano::image::swapchain::SwapchainImage;
-
-#[cfg(feature = "win")]
-#[allow(unused_imports)]
-use vulkano_win::VkSurfaceBuild;
 
 #[cfg(feature = "win")]
 use vulkano_win;
-
-#[cfg(feature = "win")]
-use winit;
-#[cfg(feature = "win")]
-use winit::EventsLoop;
 
 use self::shaders::Vertex;
 
 use self::shaders::default_vertex_shader::Shader as VertexShader;
 use self::shaders::default_fragment_shader::Shader as FragmentShader;
 
+#[cfg(feature = "win")]
+use self::win::{run_win_loop, create_swapchain_win};
 /*
 use ::image;
 #[allow(unused_imports)]
@@ -66,6 +59,7 @@ fn create_vulkan_struct() -> Arc<VulkanStruct> {
     let instance = {
         let app_info = app_info_from_cargo_toml!();
         // println!("Application Info:{:?}", app_info);
+        #[cfg(feature = "win")]
         let extensions = vulkano_win::required_extensions();
         Instance::new(Some(&app_info), &extensions, None).expect("failed to create Vulkan instance")
     };
@@ -276,59 +270,3 @@ pub fn run() {
     run_win_loop(&mut events_loop);
 }
 
-#[cfg(feature = "win")]
-fn create_swapchain_win(vulkan_obj: Arc<VulkanStruct>) -> Result<(
-        Arc<Swapchain<winit::Window>>,
-        Vec<Arc<SwapchainImage<winit::Window>>>,
-        winit::EventsLoop
-        ),
-   SwapchainCreationError> {
-    let events_loop = winit::EventsLoop::new();
-    let window = winit::WindowBuilder::new()
-        .build_vk_surface(&events_loop, vulkan_obj.device.physical_device().instance().clone())
-        .unwrap();
-
-    // if do not call is_supported, validation layer will report warnings
-    let _r = window.is_supported(vulkan_obj.queue.family()).unwrap();
-
-    let _win = window.window();
-    let caps = window
-        .capabilities(vulkan_obj.device.physical_device())
-        .expect("failed to get surface capabalities");
-
-    let dim = caps.current_extent.unwrap_or([1280, 1024]);
-    let alpha = caps.supported_composite_alpha.iter().next().unwrap();
-    let format = caps.supported_formats[0].0;
-
-    let (swap_chain, images) = Swapchain::new(
-        vulkan_obj.device.clone(),
-        window.clone(),
-        caps.min_image_count,
-        format,
-        dim,
-        1,
-        caps.supported_usage_flags,
-        &vulkan_obj.queue,
-        SurfaceTransform::Identity,
-        alpha,
-        PresentMode::Fifo,
-        true,
-        None,
-    ).expect("Failed to create swapchain");
-
-    Ok((swap_chain, images, events_loop))
-}
-
-
-#[cfg(feature = "win")]
-fn run_win_loop(events_loop: &mut EventsLoop) {
-
-
-    events_loop.run_forever(|event| match event {
-        winit::Event::WindowEvent {
-            event: winit::WindowEvent::Closed,
-            ..
-        } => winit::ControlFlow::Break,
-        _ => winit::ControlFlow::Continue,
-    });
-}
