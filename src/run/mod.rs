@@ -198,7 +198,8 @@ pub fn run() {
         vulkan_obj.queue.clone()
     ).unwrap();
 
-    vertex_buffer_future.then_signal_fence_and_flush().unwrap();
+    let f = vertex_buffer_future.then_signal_fence_and_flush().unwrap();
+    f.wait(None).unwrap();
 
     /*
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
