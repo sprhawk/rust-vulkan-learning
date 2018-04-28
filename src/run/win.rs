@@ -7,17 +7,15 @@ use winit::EventsLoop;
 use std::sync::Arc;
 use vulkano_win;
 use vulkano::image::swapchain::SwapchainImage;
-use vulkano::instance::Instance;
+use vulkano::instance::InstanceExtensions;
 use vulkano::swapchain::{PresentMode, SurfaceTransform, Swapchain, SwapchainCreationError};
 
-pub fn create_vk_instance() -> Arc<Instance> {
-    let app_info = app_info_from_cargo_toml!();
-    // println!("Application Info:{:?}", app_info);
+pub fn required_extensions() -> InstanceExtensions {
     let extensions = vulkano_win::required_extensions();
-    Instance::new(Some(&app_info), &extensions, None).expect("failed to create Vulkan instance")
+    extensions
 }
 
-pub fn create_swapchain_win(
+pub fn create_swapchain(
     vulkan_obj: Arc<VulkanStruct>,
 ) -> Result<
     (
@@ -66,7 +64,7 @@ pub fn create_swapchain_win(
     Ok((swap_chain, images, events_loop))
 }
 
-pub fn run_win_loop(events_loop: &mut EventsLoop) {
+pub fn run_loop(events_loop: &mut EventsLoop) {
     events_loop.run_forever(|event| match event {
         winit::Event::WindowEvent {
             event: winit::WindowEvent::Closed,

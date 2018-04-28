@@ -1,5 +1,6 @@
 mod info;
 mod shaders;
+
 #[cfg(feature = "win")]
 mod win;
 
@@ -37,7 +38,7 @@ use self::shaders::default_vertex_shader::Shader as VertexShader;
 use self::shaders::default_fragment_shader::Shader as FragmentShader;
 
 #[cfg(feature = "win")]
-use self::win::{run_win_loop, create_swapchain_win, create_vk_instance};
+use self::win::{run_loop, create_swapchain, required_extensions};
 /*
 use ::image;
 #[allow(unused_imports)]
@@ -49,6 +50,13 @@ pub struct VulkanStruct {
     pub queue: Arc<Queue>,
     pub vertex_shader: VertexShader,
     pub fragment_shader: FragmentShader,
+}
+
+pub fn create_vk_instance() -> Arc<Instance> {
+    let app_info = app_info_from_cargo_toml!();
+    // println!("Application Info:{:?}", app_info);
+    let extensions = required_extensions();
+    Instance::new(Some(&app_info), &extensions, None).expect("failed to create Vulkan instance")
 }
 
 fn create_vk_struct() -> Arc<VulkanStruct> {
@@ -106,7 +114,7 @@ pub fn run() {
     let vulkan_obj = create_vk_struct();
 
     let (swap_chain, images, mut events_loop) =
-        create_swapchain_win(vulkan_obj.clone()).unwrap();
+        create_swapchain(vulkan_obj.clone()).unwrap();
 
     /*
     let image = StorageImage::new(
@@ -259,6 +267,6 @@ pub fn run() {
     // swapchain::present(swap_chain, finished, queue.clone(), image_index);
 
 #[cfg(feature = "win")]
-    run_win_loop(&mut events_loop);
+    run_loop(&mut events_loop);
 }
 
