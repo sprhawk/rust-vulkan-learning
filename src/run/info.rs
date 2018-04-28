@@ -2,6 +2,8 @@ use ::vulkano;
 use std::sync::Arc;
 use vulkano::instance::{DeviceExtensions, Instance, InstanceExtensions,
                         PhysicalDevice};
+use vulkano::swapchain::Capabilities;
+use vulkano::swapchain::display::{Display, DisplayPlane};
                         
 #[allow(dead_code)]
 pub fn print_vk_info(instance: &Arc<Instance>) {
@@ -113,4 +115,75 @@ fn print_vk_physical_device(device: &PhysicalDevice) {
     );
 
     print_physical_device_extensions(device);
+}
+
+pub fn print_all_displays(physical_device:PhysicalDevice) {
+    println!("Displays:");
+    for display in Display::enumerate(physical_device) {
+        let dim = display.physical_dimensions();
+        let resolution = display.physical_resolution();
+        println!(
+            "name: {} dimension({} x {}) resolution({} x {})",
+            display.name(),
+            dim[0],
+            dim[1],
+            resolution[0],
+            resolution[1]
+        );
+        println!("modes:");
+
+        for mode in display.display_modes() {
+            let region = mode.visible_region();
+            let rate = mode.refresh_rate();
+            println!(
+                "region({} x {}) refresh rate: {}",
+                region[0], region[1], rate
+            );
+        }
+    }
+}
+
+pub fn print_all_display_plane(physical_device : PhysicalDevice) {
+    for plane in DisplayPlane::enumerate(physical_device) {
+        println!("DisplayPlane: {}", plane.index());
+    }
+}
+
+pub fn print_surface_capabilities(caps : Capabilities) {
+    print!("Surface capabilities:");
+    print!("min_image_count:({})", caps.min_image_count);
+    print!("max_image_count({:?})", caps.max_image_count);
+    if let Some(extent) = caps.current_extent {
+        print!("current_extent({}x{})", extent[0], extent[1]);
+    }
+    print!("min_image_extent({}x{})", caps.min_image_extent[0], caps.min_image_extent[1]);
+    print!("max_image_extent({}x{})", caps.max_image_extent[0], caps.max_image_extent[1]);
+    print!("max_image_array_layers({})", caps.max_image_array_layers);
+    print!("supprted_transform(");
+    print!("identity:{} ", caps.supported_transforms.identity);
+    print!("rotate90: {} ", caps.supported_transforms.rotate90);
+    print!("rotate180: {} ", caps.supported_transforms.rotate180);
+    print!("rotate279: {} ", caps.supported_transforms.rotate270);
+    print!("horizontal_mirror: {} ", caps.supported_transforms.horizontal_mirror);
+    print!("horizontal_mirror_rotate90: {} ", caps.supported_transforms.horizontal_mirror_rotate90);
+    print!("horizontal_mirror_rotate180: {} ", caps.supported_transforms.horizontal_mirror_rotate180);
+    print!("horizontal_mirror_rotate270: {} ", caps.supported_transforms.horizontal_mirror_rotate270);
+    print!("inherit: {} ", caps.supported_transforms.inherit);
+
+    print!("supported_format: {{");
+    for f in caps.supported_formats.into_iter() {
+        print!("({:?}, {:?}", f.0, f.1);
+    }
+    print!("}} ");
+
+    print!("supported_present_mode: {{");
+    print!("immediate: {} ", caps.present_modes.immediate);
+    print!("fifo: {} ", caps.present_modes.fifo);
+    print!("mailbox: {} ", caps.present_modes.mailbox);
+    print!("relaxed: {}", caps.present_modes.relaxed);
+    print!("}} ");
+
+    print!("image_usage: {:?} ", caps.supported_usage_flags);
+    print!("supported_composite_alpha: {:?}", caps.supported_composite_alpha);
+    println!("");
 }

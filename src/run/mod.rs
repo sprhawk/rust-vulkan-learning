@@ -30,21 +30,21 @@ use vulkano::instance::debug::DebugCallback;
 
 use vulkano::sync::{now, GpuFuture};
 
-use vulkano::pipeline::GraphicsPipeline;
 use vulkano::pipeline::viewport::Viewport;
+use vulkano::pipeline::GraphicsPipeline;
 
 use vulkano::swapchain;
 
 use self::shaders::Vertex;
 
-use self::shaders::default_vertex_shader::Shader as VertexShader;
 use self::shaders::default_fragment_shader::Shader as FragmentShader;
+use self::shaders::default_vertex_shader::Shader as VertexShader;
 
 #[cfg(feature = "win")]
-use self::win::{run_loop, create_swapchain, required_extensions};
+use self::win::{create_swapchain, required_extensions, run_loop};
 
 #[cfg(feature = "fbdev")]
-use self::fbdev::{run_loop, required_extensions, print_all_displays};
+use self::fbdev::{create_swapchain, required_extensions, run_loop};
 
 /*
 use ::image;
@@ -91,7 +91,7 @@ fn create_vk_struct() -> Arc<VulkanStruct> {
     let (device, mut queues) = {
         let ext = DeviceExtensions {
             khr_swapchain: true,
-            .. DeviceExtensions::none()
+            ..DeviceExtensions::none()
         };
 
         Device::new(
@@ -103,7 +103,7 @@ fn create_vk_struct() -> Arc<VulkanStruct> {
     };
 
     let queue = queues.next().expect("No queues are found");
-    
+
     let vertex_shader = shaders::default_vertex_shader::Shader::load(device.clone())
         .expect("Failed to create vertex shader module");
     let fragment_shader = shaders::default_fragment_shader::Shader::load(device.clone())
@@ -120,14 +120,13 @@ fn create_vk_struct() -> Arc<VulkanStruct> {
 }
 
 pub fn run() {
-    
     let vulkan_obj = create_vk_struct();
 
-    print_all_displays(vulkan_obj.device.physical_device());
-/*
-    let (swap_chain, images) =
-        create_swapchain(vulkan_obj.clone()).unwrap();
-*/
+    info::print_all_displays(vulkan_obj.device.physical_device());
+    info::print_all_display_plane(vulkan_obj.device.physical_device());
+
+    let (swap_chain, images) = create_swapchain(vulkan_obj.clone()).unwrap();
+
     /*
     let image = StorageImage::new(
         device.clone(),
@@ -140,7 +139,6 @@ pub fn run() {
     ).unwrap();
     */
 
-    /*
     let (image_index, swapchain_acquire_future) =
         swapchain::acquire_next_image(swap_chain.clone(), None).unwrap();
     let image = images[image_index].clone();
@@ -155,16 +153,16 @@ pub fn run() {
         position: [0.5, -0.25],
     };
 
-    
     let render_pass = Arc::new(
         single_pass_renderpass!(vulkan_obj.device.clone(),
     attachments: {
         color: {
             load: Clear,
             store: Store,
-            format: Format::B8G8R8A8Srgb,
+            // format: Format::B8G8R8A8Srgb,
             // R8G8B8A8Unorm is not supported under Linux Intel driver
             // format: Format::R8G8B8A8Unorm,
+            format: Format::B8G8R8A8Unorm,
             samples: 1,
         }
     },
@@ -194,13 +192,11 @@ pub fn run() {
     );
 
     let dynamic_state = DynamicState {
-        viewports: Some(vec![
-            Viewport {
-                origin: [0.0, 0.0],
-                dimensions: [1024.0, 1024.0],
-                depth_range: 0.0..1.0,
-            },
-        ]),
+        viewports: Some(vec![Viewport {
+            origin: [0.0, 0.0],
+            dimensions: [1024.0, 1024.0],
+            depth_range: 0.0..1.0,
+        }]),
         ..DynamicState::none()
     };
 
@@ -208,14 +204,13 @@ pub fn run() {
     let (vertex_buffer, vertex_buffer_future) = ImmutableBuffer::from_iter(
         vertices.into_iter(),
         BufferUsage::all(),
-        vulkan_obj.queue.clone()
+        vulkan_obj.queue.clone(),
     ).unwrap();
 
     let f = vertex_buffer_future.then_signal_fence_and_flush().unwrap();
     f.wait(None).unwrap();
 
-    let command_buffer =
-        AutoCommandBufferBuilder::primary_one_time_submit(vulkan_obj.device.clone(), vulkan_obj.queue.family())
+    let command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(vulkan_obj.device.clone(), vulkan_obj.queue.family())
             .unwrap()
             .begin_render_pass(
                 framebuffer.clone(),
@@ -252,9 +247,9 @@ pub fn run() {
     let _future = future.unwrap();
     // swapchain::present(swap_chain, finished, queue.clone(), image_index);
 
-#[cfg(feature = "win")]
+    #[cfg(feature = "win")]
     run_loop(&mut events_loop);
 
-    */
+    #[cfg(feature = "fbdev")]
+    run_loop();
 }
-
