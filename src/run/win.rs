@@ -1,14 +1,21 @@
-
 use super::VulkanStruct;
 #[allow(unused_imports)]
 use vulkano_win::VkSurfaceBuild;
 use winit;
 use winit::EventsLoop;
 
-
 use std::sync::Arc;
+use vulkano_win;
 use vulkano::image::swapchain::SwapchainImage;
+use vulkano::instance::Instance;
 use vulkano::swapchain::{PresentMode, SurfaceTransform, Swapchain, SwapchainCreationError};
+
+pub fn create_vk_instance() -> Arc<Instance> {
+    let app_info = app_info_from_cargo_toml!();
+    // println!("Application Info:{:?}", app_info);
+    let extensions = vulkano_win::required_extensions();
+    Instance::new(Some(&app_info), &extensions, None).expect("failed to create Vulkan instance")
+}
 
 pub fn create_swapchain_win(
     vulkan_obj: Arc<VulkanStruct>,

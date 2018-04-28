@@ -31,17 +31,13 @@ use vulkano::pipeline::viewport::Viewport;
 
 use vulkano::swapchain;
 
-
-#[cfg(feature = "win")]
-use vulkano_win;
-
 use self::shaders::Vertex;
 
 use self::shaders::default_vertex_shader::Shader as VertexShader;
 use self::shaders::default_fragment_shader::Shader as FragmentShader;
 
 #[cfg(feature = "win")]
-use self::win::{run_win_loop, create_swapchain_win};
+use self::win::{run_win_loop, create_swapchain_win, create_vk_instance};
 /*
 use ::image;
 #[allow(unused_imports)]
@@ -55,14 +51,9 @@ pub struct VulkanStruct {
     pub fragment_shader: FragmentShader,
 }
 
-fn create_vulkan_struct() -> Arc<VulkanStruct> {
-    let instance = {
-        let app_info = app_info_from_cargo_toml!();
-        // println!("Application Info:{:?}", app_info);
-        #[cfg(feature = "win")]
-        let extensions = vulkano_win::required_extensions();
-        Instance::new(Some(&app_info), &extensions, None).expect("failed to create Vulkan instance")
-    };
+fn create_vk_struct() -> Arc<VulkanStruct> {
+    #[cfg(feature = "win")]
+    let instance = create_vk_instance();
 
     let _callback = DebugCallback::errors_and_warnings(&instance, |msg| {
         println!("Vulkan Debug: {:?}", msg.description);
@@ -112,7 +103,7 @@ fn create_vulkan_struct() -> Arc<VulkanStruct> {
 
 pub fn run() {
     
-    let vulkan_obj = create_vulkan_struct();
+    let vulkan_obj = create_vk_struct();
 
     let (swap_chain, images, mut events_loop) =
         create_swapchain_win(vulkan_obj.clone()).unwrap();
