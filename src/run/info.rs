@@ -43,6 +43,7 @@ fn print_physical_device_extensions(device: &PhysicalDevice) {
         exts.khr_incremental_present,
         exts.ext_debug_marker
     );
+    println!("");
 }
 
 pub fn print_layers() {
