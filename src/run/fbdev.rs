@@ -7,7 +7,7 @@ use vulkano::swapchain::{PresentMode, SurfaceTransform, Swapchain, SwapchainCrea
 
 use vulkano::swapchain::display::Display;
 
-use vulkano::device::Device;
+use vulkano::instance::PhysicalDevice;
 
 pub fn required_extensions() -> InstanceExtensions {
     let extensions = InstanceExtensions {
@@ -35,9 +35,9 @@ pub fn run_loop() {
     loop {}
 }
 
-pub fn print_all_displays(device: Arc<Device>) {
+pub fn print_all_displays(physical_device:PhysicalDevice) {
     println!("Displays:");
-    for display in Display::enumerate(device.physical_device()) {
+    for display in Display::enumerate(physical_device) {
         let dim = display.physical_dimensions();
         let resolution = display.physical_resolution();
         println!(

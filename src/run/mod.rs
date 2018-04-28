@@ -123,7 +123,7 @@ pub fn run() {
     
     let vulkan_obj = create_vk_struct();
 
-    print_all_displays(vulkan_obj.device.clone());
+    print_all_displays(vulkan_obj.device.physical_device());
 /*
     let (swap_chain, images) =
         create_swapchain(vulkan_obj.clone()).unwrap();
