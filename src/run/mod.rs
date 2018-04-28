@@ -4,6 +4,9 @@ mod shaders;
 #[cfg(feature = "win")]
 mod win;
 
+#[cfg(feature = "fbdev")]
+mod fbdev;
+
 use std::sync::Arc;
 
 #[allow(unused_imports)]
@@ -39,6 +42,10 @@ use self::shaders::default_fragment_shader::Shader as FragmentShader;
 
 #[cfg(feature = "win")]
 use self::win::{run_loop, create_swapchain, required_extensions};
+
+#[cfg(feature = "fbdev")]
+use self::fbdev::{run_loop, required_extensions, print_all_displays};
+
 /*
 use ::image;
 #[allow(unused_imports)]
@@ -61,6 +68,9 @@ pub fn create_vk_instance() -> Arc<Instance> {
 
 fn create_vk_struct() -> Arc<VulkanStruct> {
     #[cfg(feature = "win")]
+    let instance = create_vk_instance();
+
+    #[cfg(feature = "fbdev")]
     let instance = create_vk_instance();
 
     let _callback = DebugCallback::errors_and_warnings(&instance, |msg| {
@@ -113,9 +123,11 @@ pub fn run() {
     
     let vulkan_obj = create_vk_struct();
 
-    let (swap_chain, images, mut events_loop) =
+    print_all_displays(vulkan_obj.device.clone());
+/*
+    let (swap_chain, images) =
         create_swapchain(vulkan_obj.clone()).unwrap();
-
+*/
     /*
     let image = StorageImage::new(
         device.clone(),
@@ -127,6 +139,8 @@ pub fn run() {
         Some(queue_family),
     ).unwrap();
     */
+
+    /*
     let (image_index, swapchain_acquire_future) =
         swapchain::acquire_next_image(swap_chain.clone(), None).unwrap();
     let image = images[image_index].clone();
@@ -200,21 +214,6 @@ pub fn run() {
     let f = vertex_buffer_future.then_signal_fence_and_flush().unwrap();
     f.wait(None).unwrap();
 
-    /*
-    let vertex_buffer = CpuAccessibleBuffer::from_iter(
-        vulkan_obj.device.clone(),
-        BufferUsage::all(),
-        vec![vertex1, vertex2, vertex3].into_iter(),
-    ).unwrap();
-    */
-    /*
-    let buffer = CpuAccessibleBuffer::from_iter(
-        vulkan_obj.device.clone(),
-        BufferUsage::all(),
-        (0..1024 * 1024 * 4).map(|_| 0u8),
-    ).expect("Failed to create buffer");
-    */
-
     let command_buffer =
         AutoCommandBufferBuilder::primary_one_time_submit(vulkan_obj.device.clone(), vulkan_obj.queue.family())
             .unwrap()
@@ -239,22 +238,9 @@ pub fn run() {
             .build()
             .unwrap();
 
-    /*
-    let finished = command_buffer.execute(queue.clone()).unwrap();
-    finished
-        .then_signal_fence_and_flush()
-        .unwrap()
-        .wait(None)
-        .unwrap();
-*/
     let mut previous_frame_end = Box::new(now(vulkan_obj.device.clone())) as Box<GpuFuture>;
 
     previous_frame_end.cleanup_finished();
-    /*
-    let buffer_content = buffer.read().unwrap();
-    let image = ImageBuffer::<Rgba<u8>, _>::from_raw(1024, 1024, &buffer_content[..]).unwrap();
-    image.save("image.png").unwrap();
-    */
 
     let future = previous_frame_end
         .join(swapchain_acquire_future)
@@ -268,5 +254,7 @@ pub fn run() {
 
 #[cfg(feature = "win")]
     run_loop(&mut events_loop);
+
+    */
 }
 
